@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# `prepare-commit-msg`
+#
+# This hook prepends commit messages with a numerical tag when
+# committing under numbered branches.
+#
+# For example:
+#
+#   feature/8932-callout-links -> "[#8932] ..."
+#   ticket-39451 -> "[#39451] ..."
+#
+# To use this script, place it in the '.git/hooks' directory of your
+# repository. You may prefer to add it to your global git templates
+# and use 'git init' instead. See `git help init` and `git help hooks`
+# for instructions.
+
+_ticket_number()
+{
+    git branch 2>/dev/null \
+        | grep -e '^\* .\+/[0-9]\+.*' \
+        | sed -e 's/* \w\+[\/-]\([0-9]\{1,\}\).*/\1/'
+}
+
+TICKET=$(_ticket_number)
+
+test -n "$TICKET" && echo "[#$TICKET] $(cat $1)" > "$1"
