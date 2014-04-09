@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+
 # `prepare-commit-msg`
 #
 # This hook prepends commit messages with a numerical tag when
@@ -24,4 +24,10 @@ _ticket_number()
 
 TICKET=$(_ticket_number)
 
-test -n "$TICKET" && echo "[#$TICKET] $(cat $1)" > "$1"
+echo "$TICKET" 1>&2
+
+if [ -n "$TICKET" ]; then
+   echo "[#$TICKET] $(cat $1)" > "$1"
+fi
+
+exit 0;
