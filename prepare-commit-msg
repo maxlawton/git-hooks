@@ -24,8 +24,6 @@ _ticket_number()
 
 TICKET=$(_ticket_number)
 
-echo "$TICKET" 1>&2
-
 if [ -n "$TICKET" ]; then
    echo "[#$TICKET] $(cat $1)" > "$1"
 fi
