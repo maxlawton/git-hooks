@@ -22,4 +22,4 @@ For example:
 
 * `feature/8932-callout-links` -> "[#8932] ..."
 * `ticket-39451` -> "[#39451] ..."
-
+* `release/1.2.3` -> "[v1.2.3] ..."
