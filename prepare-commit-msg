@@ -9,6 +9,7 @@
 #
 #   feature/8932-callout-links -> "[#8932] ..."
 #   ticket-39451 -> "[#39451] ..."
+#   release/1.2.3 -> "[v1.2.3] ..."
 #
 # To use this script, place it in the '.git/hooks' directory of your
 # repository. You may prefer to add it to your global git templates
@@ -28,6 +29,12 @@ _branch_is_ticket()
         | grep -q -e '^[[:alnum:][:punct:]]\+[/-][0-9]\+.*$'
 }
 
+_branch_is_release()
+{
+    _current_branch \
+        | grep -q -e '^release\+[/-][0-9.]\+.*$'
+}
+
 _branch_ticket_number()
 {
     _current_branch \
@@ -35,8 +42,18 @@ _branch_ticket_number()
         | sed -e 's/^[[:alnum:][:punct:]]\+[\/-]\([0-9]\{1,\}\).*/\1/'
 }
 
-if _branch_is_ticket
-then
+_branch_release_number()
+{
+    _current_branch \
+        | grep -e '^release\+[/-][0-9.]\+.*$' \
+        | sed -e 's/^release\+[\/-]\([0-9.]\{1,\}\).*/\1/'
+}
+
+
+if _branch_is_release; then
+    TAG=$(_branch_release_number)
+    [ -n "$TAG" ] && echo "[v$TAG] $(cat $1)" > "$1"
+elif _branch_is_ticket; then
     TICKET=$(_branch_ticket_number)
     [ -n "$TICKET" ] && echo "[#$TICKET] $(cat $1)" > "$1"
 fi
