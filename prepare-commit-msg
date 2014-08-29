@@ -15,17 +15,30 @@
 # and use 'git init' instead. See `git help init` and `git help hooks`
 # for instructions.
 
-_ticket_number()
+_current_branch()
 {
     git branch 2>/dev/null \
-        | grep -e '^\* .\+/[0-9]\+.*' \
-        | sed -e 's/* \w\+[\/-]\([0-9]\{1,\}\).*/\1/'
+        | grep -e '^* ' \
+        | sed -e 's/* \(.*\)/\1/'
 }
 
-TICKET=$(_ticket_number)
+_branch_is_ticket()
+{
+    _current_branch \
+        | grep -q -e '^[[:alnum:][:punct:]]\+[/-][0-9]\+.*$'
+}
 
-if [ -n "$TICKET" ]; then
-   echo "[#$TICKET] $(cat $1)" > "$1"
+_branch_ticket_number()
+{
+    _current_branch \
+        | grep -e '^[[:alnum:][:punct:]]\+[/-][0-9]\+.*$' \
+        | sed -e 's/^[[:alnum:][:punct:]]\+[\/-]\([0-9]\{1,\}\).*/\1/'
+}
+
+if _branch_is_ticket
+then
+    TICKET=$(_branch_ticket_number)
+    [ -n "$TICKET" ] && echo "[#$TICKET] $(cat $1)" > "$1"
 fi
 
 exit 0;
