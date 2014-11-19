@@ -18,44 +18,102 @@
 
 _current_branch()
 {
-    git branch 2>/dev/null \
-        | grep -e '^* ' \
-        | sed -e 's/* \(.*\)/\1/'
+    git branch 2>/dev/null | grep -e '^* ' | sed -e 's/* \(.*\)/\1/'
 }
 
-_branch_is_ticket()
+_branch_is_numbered()
 {
-    _current_branch \
-        | grep -q -e '^[[:alnum:][:punct:]]\+[/-][0-9]\+.*$'
+    echo "$1" | grep -q -e '^.*[[:alnum:][:punct:]]\+[/-][0-9.]\+.*$'
 }
 
-_branch_is_release()
+_branch_is_typed()
 {
-    _current_branch \
-        | grep -q -e '^release\+[/-][0-9.]\+.*$'
+    echo "$1" | grep -q -e '^.\+/[[:alnum:][:punct:]]\+.*$'
 }
 
-_branch_ticket_number()
+_branch_type_prefix()
 {
-    _current_branch \
-        | grep -e '^[[:alnum:][:punct:]]\+[/-][0-9]\+.*$' \
-        | sed -e 's/^[[:alnum:][:punct:]]\+[\/-]\([0-9]\{1,\}\).*/\1/'
+    TYPE=$(
+        echo "$1" | sed -e 's/^\([[:alnum:][:punct:]]\+\)[\/-][0-9.]\+.*/\1/'
+    )
+
+    if [ "$TYPE" = "release" ]; then
+        echo $(eval "echo `git config --get gitflow.prefix.versiontag`")
+    elif [ -n "$TYPE" ]; then
+        echo "#"
+    fi
 }
 
-_branch_release_number()
+_branch_number()
 {
-    _current_branch \
-        | grep -e '^release\+[/-][0-9.]\+.*$' \
-        | sed -e 's/^release\+[\/-]\([0-9.]\{1,\}\).*/\1/'
+    echo "$1" | sed -e 's/^.*[[:alnum:][:punct:]]\+[\/-]\([0-9.]\+\).*/\1/'
 }
 
+_branch_number_label()
+{
+    BRANCH="$1"
+    PREFIX=$(_branch_type_prefix "$BRANCH")
+    NUMBER=$(_branch_number "$BRANCH")
 
-if _branch_is_release; then
-    TAG=$(_branch_release_number)
-    [ -n "$TAG" ] && echo "[v$TAG] $(cat $1)" > "$1"
-elif _branch_is_ticket; then
-    TICKET=$(_branch_ticket_number)
-    [ -n "$TICKET" ] && echo "[#$TICKET] $(cat $1)" > "$1"
+    [ -n "${NUMBER}" ] && echo "[${PREFIX}${NUMBER}]"
+}
+
+_branch_name_label()
+{
+    NAME=$(
+        echo "$1" | sed -e 's/^.*[[:alnum:][:punct:]]\+\/\([[:alnum:][:punct:]]\+\).*/\1/'
+    )
+    [ -n "${NAME}" ] && echo "[${NAME}]"
+}
+
+_commit_is_merge()
+{
+    [ "merge" = "$1" ]
+    return $?
+}
+
+_merge_branch_label()
+{
+    LABEL=""
+    MESSAGE=$(cat)
+    SOURCE_BRANCH=$(echo $MESSAGE | sed -e "s/.*branch '\(.\+\)' .*/\1/")
+    TARGET_BRANCH=$(echo $MESSAGE | sed -e "s/.*into \([[:alnum:][:punct:]\/-]\+\).*/\1/")
+
+    if _branch_is_numbered "$TARGET_BRANCH"; then
+        LABEL=$(_branch_number_label "$TARGET_BRANCH")
+    elif _branch_is_typed "$TARGET_BRANCH"; then
+        LABEL=$(_branch_name_label "$TARGET_BRANCH")
+    fi
+
+    TAG=""
+
+    if _branch_is_numbered "$SOURCE_BRANCH"; then
+        TAG=$(_branch_number_label "$SOURCE_BRANCH")
+    elif _branch_is_typed "$SOURCE_BRANCH"; then
+        TAG=$(_branch_name_label "$SOURCE_BRANCH")
+    elif [ -n "LABEL" ]; then
+        TAG=" ${SOURCE_BRANCH}:"
+    else
+        TAG="${SOURCE_BRANCH}:"
+    fi
+
+    [ -n "$TAG" ] && LABEL="${LABEL}${TAG}"
+
+    [ -n "$LABEL" ] && echo "$LABEL"
+}
+
+LABEL=
+
+if _commit_is_merge "$2"; then
+    LABEL=$(_merge_branch_label < "$1")
+elif _branch_is_numbered "$(_current_branch)"; then
+    LABEL=$(_branch_number_label "$(_current_branch)")
+elif _branch_is_typed "$(_current_branch)"; then
+    LABEL=$(_branch_name_label "$(_current_branch)")
+fi
+
+if [ -n "$LABEL" ]; then
+    echo "$LABEL $(cat $1)" > "$1"
 fi
 
 exit 0;
