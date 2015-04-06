@@ -6,7 +6,7 @@ v0.2
 
 ### v0.2.1 / 2014-08-29
 
-* update comments in [](README.md)
+* update comments in [README.md](README.md)
 
 ### v0.2.0 / 2014-08-29
 
