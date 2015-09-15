@@ -112,7 +112,7 @@ elif _branch_is_typed "$(_current_branch)"; then
     LABEL=$(_branch_name_label "$(_current_branch)")
 fi
 
-if [ -n "$LABEL" ]; then
+if [ -n "$LABEL" ] && ! grep -q "^\\${LABEL}" "$1"; then
     echo "$LABEL $(cat $1)" > "$1"
 fi
 
